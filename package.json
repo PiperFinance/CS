@@ -15,7 +15,6 @@
   "dependencies": {
     "@ethersproject/bytes": "^5.7.0",
     "@lifi/sdk": "^1.6.4",
-    "axios": "^1.2.1",
     "bignumber.js": "^9.1.1",
     "body-parser": "^1.20.2",
     "chalk": "^5.2.0",

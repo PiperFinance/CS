@@ -34,19 +34,14 @@ router.post('/routes', (req: Request, res: Response) => {
     const { fromToken, toToken, amount, address, slippage } = schema.parse(
       req.body
     );
-    console.log('here 1');
-    console.log(handleSwap);
-    // const routes = handleSwap.getRoutes({
-    //   fromToken,
-    //   toToken,
-    //   amount,
-    //   address,
-    //   slippage,
-    // });
-
-    console.log('here 2');
-
-    res.status(200).json({ fromToken, toToken, amount, address, slippage });
+    const routes = handleSwap.getRoutes({
+      fromToken,
+      toToken,
+      amount,
+      address,
+      slippage,
+    });
+    res.status(200).json(routes);
   } catch (error: any) {
     console.log(error);
     res.status(400).json({ message: error.message });

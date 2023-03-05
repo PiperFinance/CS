@@ -1,5 +1,5 @@
-import * as Chains from '../config/chains.json';
-import  LIFI, { Route as lifiRoute } from '@lifi/sdk';
+import Chains from '../config/chains.json';
+import LIFI, { Route as lifiRoute } from '@lifi/sdk';
 import { sortData } from '../utils/customSort';
 import { QuoteSimulationResult, RangoClient } from 'rango-sdk-basic';
 import { Symbiosis, Token, TokenAmount } from 'symbiosis-js-sdk';
@@ -125,7 +125,7 @@ export default class Swap {
         slippage * 100,
         Date.now() + 20 * 60
       );
-
+      console.log(routes);
       return routes;
     } catch (err) {}
   }
@@ -135,7 +135,6 @@ export default class Swap {
   ): Promise<QuoteSimulationResult | null | undefined> {
     try {
       const { fromToken, toToken } = data;
-
       const sourceToken = Chains.find(
         (chain) => chain.id === fromToken.chainId
       );
@@ -143,7 +142,21 @@ export default class Swap {
         (chain) => chain.id === toToken.chainId
       );
 
+
       if (!sourceToken || !destinationToken) return null;
+      console.log({
+        from: {
+          blockchain: sourceToken.name.toUpperCase(),
+          symbol: fromToken.symbol.toUpperCase(),
+          address: fromToken.address.toLowerCase(),
+        },
+        to: {
+          blockchain: destinationToken.name.toUpperCase(),
+          symbol: toToken.symbol.toUpperCase(),
+          address: toToken.address.toLowerCase(),
+        },
+        amount: data.amount,
+      });
       const routes = await this.Rango.quote({
         from: {
           blockchain: sourceToken.name.toUpperCase(),
@@ -158,8 +171,12 @@ export default class Swap {
         amount: data.amount,
       });
 
+      console.log(routes);
+
       return routes.route;
-    } catch (err) {}
+    } catch (err) {
+      console.log(err);
+    }
   }
 
   private handleConvertRoutes(
