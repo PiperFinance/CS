@@ -2,7 +2,7 @@
   "name": "piper-cross-swap",
   "version": "0.0.1",
   "description": "Piper.finance cross-swap app",
-  "main": "app.ts",
+  "main": "app.js",
   "scripts": {
     "dev": "nodemon app.ts",
     "test": "npm start test",
@@ -13,7 +13,6 @@
   "author": "Piper.finance",
   "license": "ISC",
   "dependencies": {
-    "@ethersproject/bytes": "^5.7.0",
     "@lifi/sdk": "^1.6.4",
     "bignumber.js": "^9.1.1",
     "body-parser": "^1.20.2",

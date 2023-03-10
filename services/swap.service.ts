@@ -13,6 +13,8 @@ import {
   ISwapExactInSymbiosis,
   TSelectedRoute,
 } from './types';
+import checkNativeToken from '../utils/checkNative';
+import { config } from './symbiosisConfig';
 
 enum RouteType {
   Rango,
@@ -21,162 +23,116 @@ enum RouteType {
 }
 
 export default class Swap {
-  private Lifi: any;
-  private Rango: any;
-  private symbiosis: any;
+  private Lifi: LIFI;
+  private Rango: RangoClient;
+  private symbiosis: Symbiosis;
   constructor() {
     this.Lifi = new LIFI();
     this.Rango = new RangoClient('a43dfccc-bb38-48f7-9ac9-5b928df2ecc0');
-    this.symbiosis = new Symbiosis('mainnet', 'piper.finance');
+    this.symbiosis = new Symbiosis(config, 'piper.finance');
   }
 
-  public getRoutes(data: IRouteRequest): Promise<IRouteInfo[]> {
-    return Promise.all([
+  public async getRoutes(data: IRouteRequest): Promise<IRouteInfo[]> {
+    const [lifiResult, symbiosisResult, rangoResult] = await Promise.all([
       this.getLifiRoutes(data),
       this.getSymbiosisRoutes(data),
       this.getRangoRoutes(data),
-    ])
-      .then((routes) => {
-        return this.handleConvertRoutes(
-          {
-            lifi: routes[0],
-            symbiosis: routes[1],
-            rango: routes[2]!,
-          },
-          data
-        );
-      })
-      .catch((error) => {
-        console.log(error);
-        return error;
-      });
+    ]);
+
+    return this.handleConvertRoutes(
+      {
+        lifi: lifiResult,
+        symbiosis: symbiosisResult,
+        rango: rangoResult,
+      },
+      data
+    );
   }
 
-  private async getLifiRoutes(
-    data: IRouteRequest
-  ): Promise<lifiRoute[] | undefined> {
-    const { amount, fromToken, toToken, slippage } = data;
-    try {
-      const lifiResult = await this.Lifi.getRoutes({
-        fromChainId: fromToken.chainId,
-        fromTokenAddress: fromToken.address,
-        toChainId: toToken.chainId,
-        toTokenAddress: toToken.address,
-        fromAmount: amount,
-        options: {
-          slippage: slippage / 100,
-          order: 'RECOMMENDED',
-        },
-      });
-
-      return lifiResult.routes;
-    } catch (err) {}
+  private async getLifiRoutes(data: IRouteRequest): Promise<lifiRoute[]> {
+    const lifiResult = await this.Lifi.getRoutes({
+      fromChainId: data.fromToken.chainId,
+      fromTokenAddress: data.fromToken.address,
+      toChainId: data.toToken.chainId,
+      toTokenAddress: data.toToken.address,
+      fromAmount: data.amount,
+      options: {
+        slippage: data.slippage / 100,
+        order: 'RECOMMENDED',
+      },
+    });
+    return lifiResult.routes;
   }
 
   private async getSymbiosisRoutes(
     data: IRouteRequest
   ): Promise<ISwapExactInSymbiosis | undefined> {
-    const { address, amount, fromToken, toToken, slippage } = data;
-    const tokenIn = new Token({
-      chainId: fromToken.chainId,
-      address:
-        fromToken.address.toLowerCase() ===
-        '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'.toLowerCase()
-          ? ''
-          : fromToken.address,
-      name: fromToken.name,
-      isNative:
-        fromToken.address.toLowerCase() ===
-        '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'.toLowerCase()
-          ? true
-          : false,
-      symbol: fromToken.symbol,
-      decimals: fromToken.decimals,
-    });
-
-    const tokenAmountIn = new TokenAmount(tokenIn, amount);
-
-    const tokenOut = new Token({
-      chainId: toToken.chainId,
-      address:
-        toToken.address.toLowerCase() ===
-        '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'.toLowerCase()
-          ? ''
-          : toToken.address,
-      name: toToken.name,
-      isNative:
-        toToken.address.toLowerCase() ===
-        '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'.toLowerCase()
-          ? true
-          : false,
-      symbol: toToken.symbol,
-      decimals: toToken.decimals,
-    });
-
-    const swapping = this.symbiosis.newSwapping();
-
     try {
+      const tokenIn = new Token({
+        chainId: data.fromToken.chainId,
+        address: checkNativeToken(data.fromToken.address)
+          ? ''
+          : data.fromToken.address,
+        name: data.fromToken.name,
+        isNative: checkNativeToken(data.fromToken.address) ? true : false,
+        symbol: data.fromToken.symbol,
+        decimals: data.fromToken.decimals,
+      });
+      const tokenAmountIn = new TokenAmount(tokenIn, data.amount);
+      const tokenOut = new Token({
+        chainId: data.toToken.chainId,
+        address: checkNativeToken(data.toToken.address)
+          ? ''
+          : data.toToken.address,
+        name: data.toToken.name,
+        isNative: checkNativeToken(data.toToken.address) ? true : false,
+        symbol: data.toToken.symbol,
+        decimals: data.toToken.decimals,
+      });
+
+      const swapping = this.symbiosis.newSwapping();
+      console.log(swapping)
+
       const routes = await swapping.exactIn(
         tokenAmountIn,
         tokenOut,
-        address,
-        address,
-        address,
-        slippage * 100,
+        data.address,
+        data.address,
+        data.address,
+        data.slippage * 100,
         Date.now() + 20 * 60
       );
-      console.log(routes);
+
       return routes;
-    } catch (err) {}
+    } catch (e) {
+      console.log(e)
+    }
   }
 
   private async getRangoRoutes(
     data: IRouteRequest
-  ): Promise<QuoteSimulationResult | null | undefined> {
-    try {
-      const { fromToken, toToken } = data;
-      const sourceToken = Chains.find(
-        (chain) => chain.id === fromToken.chainId
-      );
-      const destinationToken = Chains.find(
-        (chain) => chain.id === toToken.chainId
-      );
-
-
-      if (!sourceToken || !destinationToken) return null;
-      console.log({
-        from: {
-          blockchain: sourceToken.name.toUpperCase(),
-          symbol: fromToken.symbol.toUpperCase(),
-          address: fromToken.address.toLowerCase(),
-        },
-        to: {
-          blockchain: destinationToken.name.toUpperCase(),
-          symbol: toToken.symbol.toUpperCase(),
-          address: toToken.address.toLowerCase(),
-        },
-        amount: data.amount,
-      });
-      const routes = await this.Rango.quote({
-        from: {
-          blockchain: sourceToken.name.toUpperCase(),
-          symbol: fromToken.symbol.toUpperCase(),
-          address: fromToken.address.toLowerCase(),
-        },
-        to: {
-          blockchain: destinationToken.name.toUpperCase(),
-          symbol: toToken.symbol.toUpperCase(),
-          address: toToken.address.toLowerCase(),
-        },
-        amount: data.amount,
-      });
-
-      console.log(routes);
-
-      return routes.route;
-    } catch (err) {
-      console.log(err);
-    }
+  ): Promise<QuoteSimulationResult | null> {
+    const sourceToken = Chains.find(
+      (chain) => chain.id === data.fromToken.chainId
+    );
+    const destinationToken = Chains.find(
+      (chain) => chain.id === data.toToken.chainId
+    );
+    if (!sourceToken || !destinationToken) return null;
+    const routes = await this.Rango.quote({
+      from: {
+        blockchain: sourceToken.name.toUpperCase(),
+        symbol: data.fromToken.symbol.toUpperCase(),
+        address: data.fromToken.address.toLowerCase(),
+      },
+      to: {
+        blockchain: destinationToken.name.toUpperCase(),
+        symbol: data.toToken.symbol.toUpperCase(),
+        address: data.toToken.address.toLowerCase(),
+      },
+      amount: data.amount,
+    });
+    return routes.route;
   }
 
   private handleConvertRoutes(
@@ -188,7 +144,6 @@ export default class Swap {
       { type: RouteType.Symbiosis, data: routes?.symbiosis },
       { type: RouteType.Rango, data: routes?.rango },
     ];
-
     const parsedRoutes: IRouteInfo[] = [];
     for (const { type, data } of routeData) {
       if (Array.isArray(data)) {
