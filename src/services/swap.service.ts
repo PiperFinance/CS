@@ -91,8 +91,6 @@ export default class Swap {
       });
 
       const swapping = this.symbiosis.newSwapping();
-      console.log(swapping)
-
       const routes = await swapping.exactIn(
         tokenAmountIn,
         tokenOut,
@@ -105,7 +103,6 @@ export default class Swap {
 
       return routes;
     } catch (e) {
-      console.log(e)
     }
   }
 
