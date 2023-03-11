@@ -44,6 +44,7 @@ router.post('/routes', async (req: Request, res: Response) => {
     });
     res.send(routes);
   } catch (error: any) {
+    console.log(error)
     res.status(400).json({ message: error.message });
   }
 });

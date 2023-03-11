@@ -2,11 +2,12 @@
   "name": "piper-cross-swap",
   "version": "0.0.1",
   "description": "Piper.finance cross-swap app",
-  "main": "app.js",
+  "main": "index.js",
+  "types": "module",
   "scripts": {
-    "dev": "nodemon app.ts",
+    "dev": "nodemon index.ts",
     "test": "npm start test",
-    "build": "npm start build",
+    "build": "rm -rf dist && tsc",
     "presetup": "yarn install",
     "setup": "npm start config && npm start setup.script"
   },
