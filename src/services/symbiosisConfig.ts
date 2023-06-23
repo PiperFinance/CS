@@ -1,6 +1,6 @@
 import { Config } from "symbiosis-js-sdk";
 
-export const config: Config = {
+export const config: any = {
     minSwapAmountInUsd: 2,
     maxSwapAmountInUsd: 5000000,
     advisor: {
