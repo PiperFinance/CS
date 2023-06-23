@@ -56,8 +56,8 @@ export interface IRouteRequest {
 
 export interface IFoundedRoutes {
   lifi: lifiRoute[] | undefined;
-  symbiosis: ISwapExactInSymbiosis | undefined;
-  rango: QuoteSimulationResult | null;
+  // symbiosis: ISwapExactInSymbiosis | undefined;
+  rango: QuoteSimulationResult | null | undefined;
 }
 
 export interface IRouteInfo {
